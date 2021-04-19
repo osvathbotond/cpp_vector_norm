@@ -2,19 +2,11 @@
 #include <vector>
 #include <thread>
 #include <random>
+#include <typeinfo>
 #include "norms_cpu.cpp"
 
 template<typename T>
 void generate_double_times(int min_threads, int max_threads, int total_runs, int vector_length, T p) {
-    std::vector <double> vec(vector_length);
-
-    std::random_device rd;
-    std::mt19937 e2(rd());
-    std::uniform_real_distribution<> dist(0, 25);
-    for (int i = 0; i < vector_length; i++) {
-        vec[i] = dist(e2);
-    }
-
     std::ofstream output;
     std::string fn = std::string("double_p") + std::to_string(p) + std::string("_n") +
                      std::to_string(vector_length) + std::string(".dat");
@@ -29,6 +21,14 @@ void generate_double_times(int min_threads, int max_threads, int total_runs, int
     }
 
     for (int run = 0; run < total_runs; run++) {
+        std::vector <double> vec(vector_length);
+
+        std::random_device rd;
+        std::mt19937 e2(rd());
+        std::uniform_real_distribution<> dist(0, 25);
+        for (int i = 0; i < vector_length; i++) {
+            vec[i] = dist(e2);
+        }
         for (int thread = min_threads; thread <= max_threads; thread++) {
             auto start = std::chrono::steady_clock::now();
             auto res = parallel_lp(&vec, vector_length, p, thread);
@@ -47,15 +47,6 @@ void generate_double_times(int min_threads, int max_threads, int total_runs, int
 
 template<typename T>
 void generate_float_times(int min_threads, int max_threads, int total_runs, int vector_length, T p) {
-    std::vector <float> vec(vector_length);
-
-    std::random_device rd;
-    std::mt19937 e2(rd());
-    std::uniform_real_distribution<> dist(0, 25);
-    for (int i = 0; i < vector_length; i++) {
-        vec[i] = dist(e2);
-    }
-
     std::ofstream output;
     std::string fn = std::string("float_p") + std::to_string(p) + std::string("_n") +
                      std::to_string(vector_length) + std::string(".dat");
@@ -68,8 +59,16 @@ void generate_float_times(int min_threads, int max_threads, int total_runs, int 
             output << thread << ", ";
         }
     }
-
     for (int run = 0; run < total_runs; run++) {
+        std::vector <float> vec(vector_length);
+
+        std::random_device rd;
+        std::mt19937 e2(rd());
+        std::uniform_real_distribution<> dist(0, 25);
+        for (int i = 0; i < vector_length; i++) {
+            vec[i] = float(dist(e2));
+        }
+
         for (int thread = min_threads; thread <= max_threads; thread++) {
             auto start = std::chrono::steady_clock::now();
             auto res = parallel_lp(&vec, vector_length, p, thread);
@@ -101,4 +100,3 @@ int main() {
     }
 
 }
-
