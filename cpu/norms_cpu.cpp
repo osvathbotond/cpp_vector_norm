@@ -1,11 +1,10 @@
 #include <vector>
 #include <future>
 #include <cmath>
-#include <fstream>
 
 template<typename T1, typename T2>
-T1 lp_sum(std::vector<T1> *vec, T2 p, int i_start, int i_end) {
-    T1 sum = 0;
+double lp_sum(std::vector<T1> *vec, T2 p, int i_start, int i_end) {
+    double sum = 0;
     for (int i = i_start; i < i_end; i++) {
         sum += std::pow(std::abs((*vec)[i]), p);
     }
@@ -13,20 +12,20 @@ T1 lp_sum(std::vector<T1> *vec, T2 p, int i_start, int i_end) {
 }
 
 template<typename T1, typename T2>
-T1 serial_lp(std::vector<T1> *vec, int n, T2 p) {
-    T1 sum = lp_sum(vec, p, 0, n);
-    T1 norm = std::pow(sum, 1.0 / p);
+double serial_lp(std::vector<T1> *vec, int n, T2 p) {
+    double sum = lp_sum(vec, p, 0, n);
+    double norm = std::pow(sum, 1.0 / p);
     return norm;
 }
 
 template<typename T1, typename T2>
-T1 parallel_lp(std::vector<T1> *vec, int n, T2 p, int number_of_threads) {
+double parallel_lp(std::vector<T1> *vec, int n, T2 p, int number_of_threads) {
     // If we are using only 1 thread, we should go with serial
     if (number_of_threads == 1) {
         return serial_lp(vec, n, p);
     }
 
-    std::vector<std::future<T1>> futures;
+    std::vector<std::future<double>> futures;
 
     int delta = n / number_of_threads;
     int i_start = 0;
@@ -44,10 +43,10 @@ T1 parallel_lp(std::vector<T1> *vec, int n, T2 p, int number_of_threads) {
         i_end += delta;
     }
 
-    T1 sum = 0;
+    double sum = 0;
     for (auto &&fut:futures) {
         sum += fut.get();
     }
-    T1 norm = std::pow(sum, 1.0 / p);
+    double norm = std::pow(sum, 1.0 / p);
     return norm;
 }

@@ -31,6 +31,11 @@
 *.out
 *.app
 
-cmake-build-debug/*
 .idea/*
 .ipynb_checkpoints/*
+cpu/.idea/*
+cpu/cmake-build-debug/*
+cpu/cmake-build-release/*
+cpu/out/*
+cuda/.vs/*
+cuda/x64/*
