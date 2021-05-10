@@ -1,5 +1,5 @@
 # The project
-This is my first C++ program. It's an lp vector norm calculator. It can only utilize the CPU at the moment, but it can work in serial and parallel as well. In the future, I'm planning to add support for GPUs as well.
+This is my first C++ program. It's an lp vector norm calculator. It can utilize both the CPU in serial and parallel and the GPU using CUDA.
 
 This is my project for my elective subject "Scientific Programming of Graphical Processors" at Eötvös Loránd University.
 
@@ -8,7 +8,7 @@ My project had 2 separate stages: a CPU-only part (code: /cpu/, result times: /r
 
 ## Hardware used for testing
 - CPU: AMD Ryzen 5 3600X (6 cores, 12 threads)
-- GPU: Nvidia GeForce RTX 2070 Super
+- GPU: NVIDIA GeForce RTX 2070 Super
 
 ## CPU
 For the parallel processing, I used the async and future.
