@@ -173,8 +173,6 @@ void generate_double_times(int cpu_threads, int total_runs, int vector_length, T
         double elapsed_seconds_gpu = std::chrono::duration_cast<std::chrono::duration<double>>(finish_gpu - start_gpu).count();
 
         output << elapsed_seconds_cpu << ", " << elapsed_seconds_gpu << "\n";
-
-        std::cout << "cpu: " << res_cpu << ", gpu: " << res_gpu << "\n";
     }
     output.close();
 }
@@ -209,23 +207,21 @@ void generate_float_times(int cpu_threads, int total_runs, int vector_length, T 
 
         output << elapsed_seconds_cpu << ", " << elapsed_seconds_gpu << "\n";
 
-        std::cout << "cpu: " << res_cpu << ", gpu: " << res_gpu << "\n";
-
     }
     output.close();
 }
 
 int main() {
     const int cpu_threads = 12;
-    const int total_runs = 10;
+    const int total_runs = 100;
     const int vector_length = 100000;
 
-    for (int i = 2; i <= 2; i++) {
+    for (int i = 1; i <= 5; i++) {
         generate_double_times(cpu_threads, total_runs, vector_length, i);
         std::cout << "double " << i << " is done. \n";
 
-        //generate_float_times(cpu_threads, total_runs, vector_length, i);
-        //std::cout << "float " << i << " is done. \n";
+        generate_float_times(cpu_threads, total_runs, vector_length, i);
+        std::cout << "float " << i << " is done. \n";
     }
 
 }
