@@ -30,7 +30,7 @@ __global__ void lp_pow(const T1* vec, const int n, T2 p, T1* pows) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < n) {
         pows[tid] = pow(abs(vec[tid]), p);
-    } 
+    }
 }
 
 __global__ void sum_reduction_double(double* vec, double* res, const int n) {
@@ -82,66 +82,204 @@ __global__ void sum_reduction_float(float* vec, float* res, const int n) {
 }
 
 template<typename T>
-double gpu_lp(double *vec, int vector_length, T p) {
+float gpu_lp(double* vec, int vector_length, T p) {
     std::vector <double> pows(vector_length);
     double res;
-    
+
     size_t bytes = vector_length * sizeof(double);
 
     int NUM_BLOCKS = (vector_length + NUM_THREADS - 1) / NUM_THREADS;
 
     double* d_vec, * d_pows, * d_res;
-    cudaMalloc(&d_vec, bytes);
-    cudaMalloc(&d_pows, bytes);
-    cudaMalloc(&d_res, bytes);
 
-    cudaMemcpy(d_vec, vec, bytes, cudaMemcpyHostToDevice);
+    cudaEvent_t evt[2];
+    for (auto& e : evt) {
+        cudaEventCreate(&e);
+    }
 
+    cudaError_t err = cudaSuccess;
+    err = cudaMalloc(&d_vec, bytes);
+    if (err != cudaSuccess) {
+        std::cout << "Error allocating CUDA memory: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaMalloc(&d_pows, bytes);
+    if (err != cudaSuccess) {
+        std::cout << "Error allocating CUDA memory: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaMalloc(&d_res, bytes);;
+    if (err != cudaSuccess) {
+        std::cout << "Error allocating CUDA memory: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaMemcpy(d_vec, vec, bytes, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        std::cout << "Error copying memory to device: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+    cudaEventRecord(evt[0]);
     lp_pow << <NUM_BLOCKS, NUM_THREADS >> > (d_vec, vector_length, p, d_pows);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        std::cout << "CUDA error in kernel call (during raising to power): " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
     sum_reduction_double << <NUM_BLOCKS, NUM_THREADS >> > (d_pows, d_res, vector_length);
-    sum_reduction_double << <1, NUM_THREADS >> > (d_res, d_res, vector_length);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+    int left = (int)std::ceil(vector_length / (1.0 * NUM_THREADS));
+    int NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS / (1.0 * NUM_THREADS));
+    while (left > 1) {
+        sum_reduction_double << <NUM_BLOCKS_RED, NUM_THREADS >> > (d_res, d_res, left);
+        err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
+            return -1;
+        }
+        left = (int)std::ceil(left / (1.0 * NUM_THREADS));
+        NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS_RED / (1.0 * NUM_THREADS));
+    }
+    cudaEventRecord(evt[1]);
 
-    cudaMemcpy(&res, d_res, sizeof(double), cudaMemcpyDeviceToHost);
+    err = cudaMemcpy(&res, d_res, sizeof(double), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        std::cout << "Error copying memory to host: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
 
-    cudaFree(d_vec);
-    cudaFree(d_pows);
-    cudaFree(d_res);
+    err = cudaFree(d_vec);
+    if (err != cudaSuccess) {
+        std::cout << "Error freeing allocation: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaFree(d_pows);
+    if (err != cudaSuccess) {
+        std::cout << "Error freeing allocation: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaFree(d_res);
+    if (err != cudaSuccess) {
+        std::cout << "Error freeing allocation: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
 
     double norm = std::pow(res, 1.0 / p);
 
-    return norm;
+    cudaEventSynchronize(evt[1]);
+    float dt = 0.0f;
+    cudaEventElapsedTime(&dt, evt[0], evt[1]);
+
+    return dt;
 }
 
 template<typename T>
-double gpu_lp(float* vec, int vector_length, T p) {
+float gpu_lp(float* vec, int vector_length, T p) {
     std::vector <float> pows(vector_length);
     float res;
 
     size_t bytes = vector_length * sizeof(float);
 
-
     int NUM_BLOCKS = (vector_length + NUM_THREADS - 1) / NUM_THREADS;
 
     float* d_vec, * d_pows, * d_res;
-    cudaMalloc(&d_vec, bytes);
-    cudaMalloc(&d_pows, bytes);
-    cudaMalloc(&d_res, bytes);
 
-    cudaMemcpy(d_vec, vec, bytes, cudaMemcpyHostToDevice);
+    cudaEvent_t evt[2];
+    for (auto& e : evt) {
+        cudaEventCreate(&e);
+    }
 
+    cudaError_t err = cudaSuccess;
+    err = cudaMalloc(&d_vec, bytes);
+    if (err != cudaSuccess) {
+        std::cout << "Error allocating CUDA memory: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaMalloc(&d_pows, bytes);
+    if (err != cudaSuccess) {
+        std::cout << "Error allocating CUDA memory: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaMalloc(&d_res, bytes);;
+    if (err != cudaSuccess) {
+        std::cout << "Error allocating CUDA memory: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaMemcpy(d_vec, vec, bytes, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        std::cout << "Error copying memory to device: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+    cudaEventRecord(evt[0]);
     lp_pow << <NUM_BLOCKS, NUM_THREADS >> > (d_vec, vector_length, p, d_pows);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        std::cout << "CUDA error in kernel call (during raising to power): " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
     sum_reduction_float << <NUM_BLOCKS, NUM_THREADS >> > (d_pows, d_res, vector_length);
-    sum_reduction_float << <1, NUM_THREADS >> > (d_res, d_res, vector_length);
+    err = cudaGetLastError();
+    if (err != cudaSuccess) {
+        std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+    int left = (int)std::ceil(vector_length / (1.0 * NUM_THREADS));
+    int NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS / (1.0 * NUM_THREADS));
+    while (left > 1) {
+        sum_reduction_float<<<NUM_BLOCKS_RED, NUM_THREADS>>>(d_res, d_res, left);
+        err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
+            return -1;
+        }
+        left = (int)std::ceil(left / (1.0 * NUM_THREADS));
+        NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS_RED / (1.0 * NUM_THREADS));
+    }
+    cudaEventRecord(evt[1]);
 
-    cudaMemcpy(&res, d_res, sizeof(float), cudaMemcpyDeviceToHost);
+    err = cudaMemcpy(&res, d_res, sizeof(float), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        std::cout << "Error copying memory to host: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
 
-    cudaFree(d_vec);
-    cudaFree(d_pows);
-    cudaFree(d_res);
+    err = cudaFree(d_vec);
+    if (err != cudaSuccess) {
+        std::cout << "Error freeing allocation: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaFree(d_pows);
+    if (err != cudaSuccess) {
+        std::cout << "Error freeing allocation: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
+
+    err = cudaFree(d_res);
+    if (err != cudaSuccess) {
+        std::cout << "Error freeing allocation: " << cudaGetErrorString(err) << "\n";
+        return -1;
+    }
 
     double norm = std::pow(res, 1.0 / p);
 
-    return norm;
+    cudaEventSynchronize(evt[1]);
+    float dt = 0.0f;
+    cudaEventElapsedTime(&dt, evt[0], evt[1]);
+
+    return dt;
 }
 
 template<typename T>
@@ -151,13 +289,14 @@ void generate_double_times(int cpu_threads, int total_runs, int vector_length, T
     std::string fn = std::string("double_p") + std::to_string(p) + std::string("_n") +
         std::to_string(vector_length) + std::string(".dat");
     output.open(fn);
-    output << "# The first column contains the cpu time with " << cpu_threads << " threads, and the second column contains the gpu times. \n";
+    output << "# The first column contains the cpu time with " << cpu_threads << " threads, and the second column contains the total gpu times (with copy, malloc, etc) and the third contains"
+        << " only the calculation times (power and sum done on the gpu). \n";
     for (int run = 0; run < total_runs; run++) {
         std::vector <double> vec(vector_length);
 
         std::random_device rd;
         std::mt19937 e2(rd());
-        std::uniform_real_distribution<> dist(0, 25);
+        std::uniform_real_distribution<> dist(-1000.0, 1000.0);
         for (int i = 0; i < vector_length; i++) {
             vec[i] = dist(e2);
         }
@@ -170,9 +309,11 @@ void generate_double_times(int cpu_threads, int total_runs, int vector_length, T
         auto start_gpu = std::chrono::steady_clock::now();
         auto res_gpu = gpu_lp(vec.data(), vector_length, p);
         auto finish_gpu = std::chrono::steady_clock::now();
-        double elapsed_seconds_gpu = std::chrono::duration_cast<std::chrono::duration<double>>(finish_gpu - start_gpu).count();
+        double elapsed_seconds_gpu_calc = res_gpu / 1000.0;
+        double elapsed_seconds_gpu_total = std::chrono::duration_cast<std::chrono::duration<double>>(finish_gpu - start_gpu).count();
 
-        output << elapsed_seconds_cpu << ", " << elapsed_seconds_gpu << "\n";
+
+        output << elapsed_seconds_cpu << ", " << elapsed_seconds_gpu_total << ", " << elapsed_seconds_gpu_calc << "\n";
     }
     output.close();
 }
@@ -184,13 +325,14 @@ void generate_float_times(int cpu_threads, int total_runs, int vector_length, T 
     std::string fn = std::string("float_p") + std::to_string(p) + std::string("_n") +
         std::to_string(vector_length) + std::string(".dat");
     output.open(fn);
-    output << "# The first column contains the cpu time with " << cpu_threads << " threads, and the second column contains the gpu times. \n";
+    output << "# The first column contains the cpu time with " << cpu_threads << " threads, and the second column contains the total gpu times (with copy, malloc, etc) and the third contains"
+           <<" only the calculation times (power and sum done on the gpu). \n";
     for (int run = 0; run < total_runs; run++) {
         std::vector <float> vec(vector_length);
 
         std::random_device rd;
         std::mt19937 e2(rd());
-        std::uniform_real_distribution<> dist(0, 25);
+        std::uniform_real_distribution<> dist(-1000.0f, 1000.0f);
         for (int i = 0; i < vector_length; i++) {
             vec[i] = float(dist(e2));
         }
@@ -203,18 +345,19 @@ void generate_float_times(int cpu_threads, int total_runs, int vector_length, T 
         auto start_gpu = std::chrono::steady_clock::now();
         auto res_gpu = gpu_lp(vec.data(), vector_length, p);
         auto finish_gpu = std::chrono::steady_clock::now();
-        double elapsed_seconds_gpu = std::chrono::duration_cast<std::chrono::duration<double>>(finish_gpu - start_gpu).count();
+        double elapsed_seconds_gpu_calc = res_gpu / 1000.0;
+        double elapsed_seconds_gpu_total = std::chrono::duration_cast<std::chrono::duration<double>>(finish_gpu - start_gpu).count();
 
-        output << elapsed_seconds_cpu << ", " << elapsed_seconds_gpu << "\n";
 
+        output << elapsed_seconds_cpu << ", " << elapsed_seconds_gpu_total << ", " << elapsed_seconds_gpu_calc << "\n";
     }
     output.close();
 }
 
 int main() {
     const int cpu_threads = 12;
-    const int total_runs = 100;
-    const int vector_length = 100000;
+    const int total_runs = 15;
+    const int vector_length = 10'000'000;
 
     for (int i = 1; i <= 5; i++) {
         generate_double_times(cpu_threads, total_runs, vector_length, i);

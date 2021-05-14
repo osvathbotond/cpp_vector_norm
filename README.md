@@ -8,7 +8,7 @@ My project had 2 separate stages: a CPU-only part (code: /cpu/, result times: /r
 
 ## Hardware used for testing
 - CPU: AMD Ryzen 5 3600X (6 cores, 12 threads)
-- GPU: NVIDIA GeForce RTX 2070 Super
+- GPU: NVIDIA GeForce RTX 2070 Super (8GB VRAM)
 
 ## CPU
 For the parallel processing, I used the async and future.
@@ -24,16 +24,16 @@ In the following figure you can see the times with different norms and number of
 ![thread_vs_t_cpu](/results/p_vs_t_cpu.png)
 
 ## GPU
-While doing this part, I've learned a lot from [CoffeeBeforeArch's youtube channel](https://www.youtube.com/channel/UCsi5-meDM5Q5NE93n_Ya7GA) as well. I decided to work using CUDA 
+While doing this part, I've learned a lot from [CoffeeBeforeArch's youtube channel](https://www.youtube.com/channel/UCsi5-meDM5Q5NE93n_Ya7GA) as well. I decided to work using CUDA, because I have an NVIDIA GPU.
 
-For the images, I calculated the p-norm of 100,000 long random vectors, as I've got different results with the CPU and GPU calculations for 1,000,000 long vectors (for details, see the Current problem(s) section). The first few runs were slower this time as well, so I ran everything 100 times and discarded the first 10 runs from the averages. I also used a block-size of 512 for the GPU runs, and 12 threads for the CPU runs.
+For the images, I calculated the p-norm of 10,000,000 long random vectors. I ran everything 15 times and I used a block-size of 512 for the GPU runs, and 12 threads for the CPU runs.
 
 In the following figure you can see how the float and double times compares to each other on CPU and GPU, with different p values:
-![cpu_vs_gpu](/results/cpu_vs_gpu.png)
+![cpu_vs_gpu_total](/results/cpu_vs_gpu_total.png)
 
-# Current problem(s)
-- The CPU is faster in Release mode, while it works as expected in Debug mode
-- The GPU and CPU gives different result for long vectors (1M for Debug, 100k for Release)
+And in the following figure you can see the total GPU time replaced with the calculation time only (i.e. the memory allocation, memory freeing and copying is not counted):
+![cpu_vs_gpu_calconly](/results/cpu_vs_gpu_calconly.png)
+
 
 # Possible TODOs
 - Run the code on a different hardware

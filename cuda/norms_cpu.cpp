@@ -26,6 +26,7 @@ double parallel_lp(std::vector<T1>* vec, int n, T2 p, int number_of_threads) {
     }
 
     std::vector<std::future<double>> futures;
+    futures.reserve(number_of_threads);
 
     int delta = n / number_of_threads;
     int i_start = 0;
