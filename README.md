@@ -17,22 +17,42 @@ For the images, I calculated the p-norm of 1,000,000 long random vectors, 100 ti
 
 Based on my runs, I was surprised finding out that using 6 threads were slightly slower than expected (as it was slower than 5 and 7 threads). It was also surprising to me to see that the double calculations were faster.
 
-In the following figure you can see the effect of the number of threads on the running times (using the 2-norm):
-![thread_vs_t_cpu](/results/thread_vs_t_cpu.png)
+In the following figures you can see the effect of the number of threads on the running times (using the 2-norm).
 
-In the following figure you can see the times with different norms and number of threads:
-![thread_vs_t_cpu](/results/p_vs_t_cpu.png)
+The mean time:
+![thread_vs_t_cpu_mean](/results/thread_vs_t_cpu_mean.png)
+
+The min time:
+![thread_vs_t_cpu_min](/results/thread_vs_t_cpu_min.png)
+
+In the following figures you can see the times with different norms and number of threads.
+
+The mean time:
+![thread_vs_t_cpu_mean](/results/p_vs_t_cpu_mean.png)
+
+The min time:
+![thread_vs_t_cpu_min](/results/p_vs_t_cpu_min.png)
 
 ## GPU
 While doing this part, I've learned a lot from [CoffeeBeforeArch's youtube channel](https://www.youtube.com/channel/UCsi5-meDM5Q5NE93n_Ya7GA) as well. I decided to work using CUDA, because I have an NVIDIA GPU.
 
-For the images, I calculated the p-norm of 10,000,000 long random vectors. I ran everything 15 times and I used a block-size of 512 for the GPU runs, and 12 threads for the CPU runs.
+For the images, I calculated the p-norm of 10,000,000 long random vectors. I ran everything 100 times and I used a block-size of 512 for the GPU runs, and 12 threads for the CPU runs.
 
-In the following figure you can see how the float and double times compares to each other on CPU and GPU, with different p values:
-![cpu_vs_gpu_total](/results/cpu_vs_gpu_total.png)
+In the following figures you can see how the float and double times compares to each other on CPU and GPU, with different p values.
 
-And in the following figure you can see the total GPU time replaced with the calculation time only (i.e. the memory allocation, memory freeing and copying is not counted):
-![cpu_vs_gpu_calconly](/results/cpu_vs_gpu_calconly.png)
+The mean time:
+![cpu_vs_gpu_total_mean](/results/cpu_vs_gpu_total_mean.png)
+
+The min time:
+![cpu_vs_gpu_total_mean](/results/cpu_vs_gpu_total_min.png)
+
+And in the following figures you can see the total times replaced with the calculation time only (i.e. the memory allocation, memory freeing and copying is not counted).
+
+The mean time:
+![cpu_vs_gpu_calconly_mean](/results/cpu_vs_gpu_calconly_mean.png)
+
+The min time:
+![cpu_vs_gpu_calconly_min](/results/cpu_vs_gpu_calconly_min.png)
 
 
 # Possible TODOs
