@@ -25,14 +25,6 @@ static const int NUM_THREADS = 512;
 static const int FLOAT_MEM_SIZE = NUM_THREADS * 4;
 static const int DOUBLE_MEM_SIZE = NUM_THREADS * 8;
 
-template<typename T1, typename T2>
-__global__ void lp_pow(const T1* vec, const int n, T2 p, T1* pows) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid < n) {
-        pows[tid] = pow(abs(vec[tid]), p);
-    }
-}
-
 template<typename T>
 __global__ void sum_reduction_double(double* vec, double* res, const int n, const bool power, T p) {
     __shared__ double partial_sum[DOUBLE_MEM_SIZE];
