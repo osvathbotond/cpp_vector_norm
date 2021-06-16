@@ -18,16 +18,15 @@
 #include <algorithm>
 #include <cassert>
 #include <numeric>
+#include <string>
 
 #include "norms_cpu.cpp"
 
 static const int NUM_THREADS = 512;
-static const int FLOAT_MEM_SIZE = NUM_THREADS * 4;
-static const int DOUBLE_MEM_SIZE = NUM_THREADS * 8;
 
 template<typename T>
 __global__ void sum_reduction_double(double* vec, double* res, const int n, const bool power, T p) {
-    __shared__ double partial_sum[DOUBLE_MEM_SIZE];
+    __shared__ double partial_sum[NUM_THREADS];
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < n) {
@@ -57,7 +56,7 @@ __global__ void sum_reduction_double(double* vec, double* res, const int n, cons
 
 template<typename T>
 __global__ void sum_reduction_float(float* vec, float* res, const int n, const bool power, T p) {
-    __shared__ float partial_sum[FLOAT_MEM_SIZE];
+    __shared__ float partial_sum[NUM_THREADS];
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < n) {
