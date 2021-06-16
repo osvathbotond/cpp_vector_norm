@@ -36,7 +36,6 @@ double parallel_lp(const std::vector<T1>& vec, int n, T2 p, int number_of_thread
     int i_start = 0;
     int i_end = delta;
 
-    auto start_cpu = std::chrono::steady_clock::now();
     for (int i = 0; i < number_of_threads; i++) {
         if (i == number_of_threads - 1) {
             i_end = n;
@@ -55,8 +54,5 @@ double parallel_lp(const std::vector<T1>& vec, int n, T2 p, int number_of_thread
     }
     double norm = std::pow(sum, 1.0 / p);
 
-    auto finish_cpu = std::chrono::steady_clock::now();
-    double elapsed_seconds_cpu = std::chrono::duration_cast<std::chrono::duration<double>>(finish_cpu - start_cpu).count();
-
-    return elapsed_seconds_cpu;
+    return norm;
 }
