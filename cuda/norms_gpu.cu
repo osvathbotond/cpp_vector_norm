@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cassert>
 #include <numeric>
+#include <string>
 
 #include "norms_cpu.cpp"
 
