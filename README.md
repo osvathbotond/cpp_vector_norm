@@ -4,7 +4,7 @@ This is my first C++ program. It's an lp vector norm calculator. It can utilize 
 This is my project for my elective subject "Scientific Programming of Graphical Processors" at Eötvös Loránd University.
 
 # My results
-My project had 2 separate stages: a CPU-only part (code: /cpu/, result times: /results/data_cpu/) and a GPU part (using CUDA), with CPU comparision (code: /cuda/, result times: /results/data_gpu/).
+My project had 2 separate stages: a CPU-only part (code: /cpu/, result times: /results/data_cpu/) and a GPU part (using CUDA), with CPU comparision (code: /cuda/, result times: /results/data_gpu/). The exact code used for the timing has been moved to the timing branch.
 
 ## Hardware used for testing
 - CPU: AMD Ryzen 5 3600X (6 cores, 12 threads)
