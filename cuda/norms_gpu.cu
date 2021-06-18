@@ -41,6 +41,8 @@ __global__ void sum_reduction_double(double* vec, double* res, const int n, cons
         partial_sum[threadIdx.x] = 0.0;
     }
 
+    __syncthreads();
+
     for (int s = blockDim.x / 2; s > 0; s >>= 1) {
         if (threadIdx.x < s) {
             partial_sum[threadIdx.x] += partial_sum[threadIdx.x + s];
@@ -54,8 +56,8 @@ __global__ void sum_reduction_double(double* vec, double* res, const int n, cons
 
 }
 
-template<typename T>
-__global__ void sum_reduction_float(float* vec, float* res, const int n, const bool power, T p) {
+template<typename t>
+__global__ void sum_reduction_float(float* vec, float* res, const int n, const bool power, t p) {
     __shared__ float partial_sum[NUM_THREADS];
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -68,8 +70,10 @@ __global__ void sum_reduction_float(float* vec, float* res, const int n, const b
         }
     }
     else {
-        partial_sum[threadIdx.x] = 0.0;
+        partial_sum[threadIdx.x] = 0;
     }
+
+    __syncthreads();
 
     for (int s = blockDim.x / 2; s > 0; s >>= 1) {
         if (threadIdx.x < s) {
@@ -113,24 +117,26 @@ double gpu_lp(double* vec, int vector_length, T p) {
         std::cout << "Error copying memory to device: " << cudaGetErrorString(err) << "\n";
         return -1;
     }
+
     sum_reduction_double << <NUM_BLOCKS, NUM_THREADS >> > (d_vec, d_res, vector_length, true, p);
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
         return -1;
     }
-    int left = (int)std::ceil(vector_length / (1.0 * NUM_THREADS));
-    int NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS / (1.0 * NUM_THREADS));
-    while (left > 1) {
+
+    int left;
+    int NUM_BLOCKS_RED = NUM_BLOCKS;
+    do {
+        left = NUM_BLOCKS_RED;
+        NUM_BLOCKS_RED = (left + NUM_THREADS - 1) / NUM_THREADS;
         sum_reduction_double << <NUM_BLOCKS_RED, NUM_THREADS >> > (d_res, d_res, left, false, 0);
         err = cudaGetLastError();
         if (err != cudaSuccess) {
             std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
             return -1;
         }
-        left = (int)std::ceil(left / (1.0 * NUM_THREADS));
-        NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS_RED / (1.0 * NUM_THREADS));
-    }
+    } while (NUM_BLOCKS_RED > 1);
 
     err = cudaMemcpy(&res, d_res, sizeof(double), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
@@ -191,18 +197,19 @@ double gpu_lp(float* vec, int vector_length, T p) {
         std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
         return -1;
     }
-    int left = (int)std::ceil(vector_length / (1.0 * NUM_THREADS));
-    int NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS / (1.0 * NUM_THREADS));
-    while (left > 1) {
-        sum_reduction_float<<<NUM_BLOCKS_RED, NUM_THREADS>>>(d_res, d_res, left, false, 0);
+
+    int left;
+    int NUM_BLOCKS_RED = NUM_BLOCKS;
+    do {
+        left = NUM_BLOCKS_RED;
+        NUM_BLOCKS_RED = (left + NUM_THREADS - 1) / NUM_THREADS;
+        sum_reduction_float << <NUM_BLOCKS_RED, NUM_THREADS >> > (d_res, d_res, left, false, 0);
         err = cudaGetLastError();
         if (err != cudaSuccess) {
             std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
             return -1;
         }
-        left = (int)std::ceil(left / (1.0 * NUM_THREADS));
-        NUM_BLOCKS_RED = (int)std::ceil(NUM_BLOCKS_RED / (1.0 * NUM_THREADS));
-    }
+    } while (NUM_BLOCKS_RED > 1);
 
     err = cudaMemcpy(&res, d_res, sizeof(float), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
@@ -228,8 +235,8 @@ double gpu_lp(float* vec, int vector_length, T p) {
 }
 
 int main() {
-    const int vector_length = 10'000'000;
-    const int p = 2;
+    const int vector_length = 511*11*17;
+    const int p = 1;
 
     std::vector <float> vec(vector_length);
 
@@ -245,7 +252,8 @@ int main() {
     auto finish = std::chrono::steady_clock::now();
     double elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(finish - start).count();
 
-    std::cout << "Calculating the " << p << "-norm of a(n) " << vector_length << " long random float vector on the GPU took " << elapsed_seconds << " seconds.";
+    std::cout << "Calculating the " << p << "-norm of a(n) " << vector_length << " long random float vector on the GPU took " << elapsed_seconds << " seconds." << std::endl;
+    std::cout << "The result is: " << res;
 
     return 0;
 
