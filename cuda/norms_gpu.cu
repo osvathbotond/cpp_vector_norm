@@ -22,11 +22,11 @@
 
 #include "norms_cpu.cpp"
 
-static const int NUM_THREADS = 512;
+static const int num_threads = 512;
 
 template<typename T>
 __global__ void sum_reduction(const T* vec, T* res, const int n, const bool power, T p) {
-    __shared__ T partial_sum[NUM_THREADS];
+    __shared__ T partial_sum[num_threads];
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid < n) {
@@ -78,8 +78,8 @@ T gpu_lp(T* vec, int vector_length, T p) {
 
     size_t bytes = vector_length * sizeof(T);
 
-    // ceil(vector_length / NUM_THREADS)
-    int NUM_BLOCKS = (vector_length + NUM_THREADS - 1) / NUM_THREADS;
+    // ceil(vector_length / num_threads)
+    int num_blocks = (vector_length + num_threads - 1) / num_threads;
 
     // Pointers to the device-side variables
     T *d_vec, *d_res1, *d_res2;
@@ -110,28 +110,28 @@ T gpu_lp(T* vec, int vector_length, T p) {
         return -1;
     }
 
-    // The first sum-reduction. Each block gives back a number, so the first NUM_BLOCKS elements
+    // The first sum-reduction. Each block gives back a number, so the first num_blocks elements
     // of the result d_res will have the needed information for us (the partial sums).
-    sum_reduction << <NUM_BLOCKS, NUM_THREADS >> > (d_vec, d_res1, vector_length, true, p);
+    sum_reduction << <num_blocks, num_threads >> > (d_vec, d_res1, vector_length, true, p);
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
         return -1;
     }
 
-    // Since a reduction gives us back NUM_BLOCKS elements, we need to do it until NUM_BLOCKS == 1.
+    // Since a reduction gives us back num_blocks elements, we need to do it until num_blocks == 1.
     int left;
-    int NUM_BLOCKS_RED = NUM_BLOCKS;
+    int num_blocks_red = num_blocks;
     int source_counter = 1;
     do {
-        left = NUM_BLOCKS_RED;
-        NUM_BLOCKS_RED = (left + NUM_THREADS - 1) / NUM_THREADS;
+        left = num_blocks_red;
+        num_blocks_red = (left + num_threads - 1) / num_threads;
         if (source_counter == 1) {
-            sum_reduction << <NUM_BLOCKS_RED, NUM_THREADS >> > (d_res1, d_res2, left, false, p);
+            sum_reduction << <num_blocks_red, num_threads >> > (d_res1, d_res2, left, false, p);
             source_counter = 2;
         }
         else {
-            sum_reduction << <NUM_BLOCKS_RED, NUM_THREADS >> > (d_res2, d_res1, left, false, p);
+            sum_reduction << <num_blocks_red, num_threads >> > (d_res2, d_res1, left, false, p);
             source_counter = 1;
         }
 
@@ -140,7 +140,7 @@ T gpu_lp(T* vec, int vector_length, T p) {
             std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
             return -1;
         }
-    } while (NUM_BLOCKS_RED > 1);
+    } while (num_blocks_red > 1);
 
     // Copying back to the host (only one number; the 0-th element of the d_res), with error handling.
     if (source_counter == 1) {
