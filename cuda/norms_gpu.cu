@@ -112,7 +112,7 @@ T gpu_lp(T* vec, int vector_length, T p) {
 
     // The first sum-reduction. Each block gives back a number, so the first num_blocks elements
     // of the result d_res will have the needed information for us (the partial sums).
-    sum_reduction << <num_blocks, num_threads >> > (d_vec, d_res1, vector_length, true, p);
+    sum_reduction<<<num_blocks, num_threads>>>(d_vec, d_res1, vector_length, true, p);
     err = cudaGetLastError();
     if (err != cudaSuccess) {
         std::cout << "CUDA error in kernel call (during sum reduction): " << cudaGetErrorString(err) << "\n";
@@ -127,11 +127,11 @@ T gpu_lp(T* vec, int vector_length, T p) {
         left = num_blocks_red;
         num_blocks_red = (left + num_threads - 1) / num_threads;
         if (source_counter == 1) {
-            sum_reduction << <num_blocks_red, num_threads >> > (d_res1, d_res2, left, false, p);
+            sum_reduction<<<num_blocks_red, num_threads>>>(d_res1, d_res2, left, false, p);
             source_counter = 2;
         }
         else {
-            sum_reduction << <num_blocks_red, num_threads >> > (d_res2, d_res1, left, false, p);
+            sum_reduction<<<num_blocks_red, num_threads>>>(d_res2, d_res1, left, false, p);
             source_counter = 1;
         }
 
