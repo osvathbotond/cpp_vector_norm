@@ -22,11 +22,8 @@ template<typename T>
 double parallel_lp(const std::vector<T>& vec, int n, T p, int number_of_threads) {
     // If we are using only 1 thread, we should go with serial
     if (number_of_threads == 1) {
-        auto start_cpu = std::chrono::steady_clock::now();
         auto res = serial_lp(vec, n, p);
-        auto finish_cpu = std::chrono::steady_clock::now();
-        double elapsed_seconds_cpu = std::chrono::duration_cast<std::chrono::duration<double>>(finish_cpu - start_cpu).count();
-        return elapsed_seconds_cpu;
+		return res;
     }
 
     std::vector<std::future<double>> futures;
