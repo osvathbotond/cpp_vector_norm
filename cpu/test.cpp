@@ -4,6 +4,7 @@
 #include <thread>
 #include <random>
 #include <typeinfo>
+#include <string>
 #include "norms_cpu.cpp"
 
 template<typename T>
@@ -32,14 +33,14 @@ void generate_double_times(int min_threads, int max_threads, int total_runs, int
         }
         for (int thread = min_threads; thread <= max_threads; thread++) {
             auto start = std::chrono::steady_clock::now();
-            auto res = parallel_lp(vec, vector_length, p, thread);
+            auto res = parallel_lp(vec, vector_length, (double)p, thread);
             auto finish = std::chrono::steady_clock::now();
             double elapsed_seconds = std::chrono::duration_cast<
                     std::chrono::duration<double> >(finish - start).count();
             if (thread == max_threads) {
-                output << elapsed_seconds << "\n";
+                output << res << "\n";
             } else {
-                output << elapsed_seconds << ", ";
+                output << res << ", ";
             }
         }
     }
@@ -72,14 +73,14 @@ void generate_float_times(int min_threads, int max_threads, int total_runs, int 
 
         for (int thread = min_threads; thread <= max_threads; thread++) {
             auto start = std::chrono::steady_clock::now();
-            auto res = parallel_lp(vec, vector_length, p, thread);
+            auto res = parallel_lp(vec, vector_length, (float)p, thread);
             auto finish = std::chrono::steady_clock::now();
             double elapsed_seconds = std::chrono::duration_cast<
                     std::chrono::duration<double> >(finish - start).count();
             if (thread == max_threads) {
-                output << elapsed_seconds << "\n";
+                output << res << "\n";
             } else {
-                output << elapsed_seconds << ", ";
+                output << res << ", ";
             }
         }
     }
